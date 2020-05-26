@@ -56,7 +56,7 @@ BOOL updateFolderExists()
 
 void createUpdateFolder()
 {
-    IOSUHAX_FSA_MakeDir(fsaFd, UPDATE_FOLDER_PATH, 0755);
+    IOSUHAX_FSA_MakeDir(fsaFd, UPDATE_FOLDER_PATH, 0777);
 }
 
 void deleteUpdateFolder()
