@@ -2,8 +2,8 @@
 <app version="1">
   <name>UFDiine</name>
   <coder>GaryOderNichts</coder>
-  <version>v1</version>
-  <release_date>20200524210000</release_date>
+  <version>v1.1</version>
+  <release_date>20200526210000</release_date>
   <short_description>Update Folder Deleter</short_description> 
   <long_description>
     Deleting the update folder will block System Updates
