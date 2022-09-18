@@ -109,8 +109,8 @@ int main(int argc, char **argv) {
             } else {
                 createUpdateFolder();
             }
-            drawMenu();
         }
+        drawMenu();
         OSSleepTicks(OSMillisecondsToTicks(100));
     }
 
