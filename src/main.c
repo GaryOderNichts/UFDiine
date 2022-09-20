@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 
     FSADelClient(gClient);
 
-    Mocha_DeinitLibrary();
+    Mocha_DeInitLibrary();
 
 
 exit:
