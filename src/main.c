@@ -11,6 +11,21 @@
 #include <whb/log_console.h>
 #include <whb/proc.h>
 
+#define OSScreenClearBuffer(color) ({ \
+    OSScreenClearBufferEx(SCREEN_TV, color); \
+    OSScreenClearBufferEx(SCREEN_DRC, color); \
+})
+
+#define OSScreenFlipBuffers() ({ \
+    OSScreenFlipBuffersEx(SCREEN_TV); \
+    OSScreenFlipBuffersEx(SCREEN_DRC); \
+})
+
+#define OSScreenPutFont(row, column, buffer) ({ \
+    OSScreenPutFontEx(SCREEN_TV, row, column, buffer); \
+    OSScreenPutFontEx(SCREEN_DRC, row, column, buffer); \
+})
+
 #define UPDATE_FOLDER_PATH "/vol/storage_mlc01/sys/update"
 
 int gClient = -1;
@@ -34,38 +49,24 @@ void deleteUpdateFolder() {
 }
 
 void drawMenu() {
-    OSScreenClearBufferEx(SCREEN_TV, 0);
-    OSScreenClearBufferEx(SCREEN_DRC, 0);
+    OSScreenClearBuffer(0);
 
-    OSScreenPutFontEx(SCREEN_TV, 0, 0, "*************************************************");
-    OSScreenPutFontEx(SCREEN_TV, 0, 1, "UFDiine (Update Folder Deleter) by GaryOderNichts");
-    OSScreenPutFontEx(SCREEN_TV, 0, 2, "   Block updates by deleting the update folder   ");
-    OSScreenPutFontEx(SCREEN_TV, 0, 3, "*************************************************");
-
-    OSScreenPutFontEx(SCREEN_DRC, 0, 0, "*************************************************");
-    OSScreenPutFontEx(SCREEN_DRC, 0, 1, "UFDiine (Update Folder Deleter) by GaryOderNichts");
-    OSScreenPutFontEx(SCREEN_DRC, 0, 2, "   Block updates by deleting the update folder   ");
-    OSScreenPutFontEx(SCREEN_DRC, 0, 3, "*************************************************");
+    OSScreenPutFont(0, 0, "*************************************************");
+    OSScreenPutFont(0, 1, "      UFDiine (Update Folder Deleter) v2.0");
+    OSScreenPutFont(0, 2, "   Block updates by deleting the update folder   ");
+    OSScreenPutFont(0, 3, "*************************************************");
 
     if (updateFolderExists()) {
-        OSScreenPutFontEx(SCREEN_TV, 0, 4, "Update folder exists");
-        OSScreenPutFontEx(SCREEN_DRC, 0, 4, "Update folder exists");
-
-        OSScreenPutFontEx(SCREEN_TV, 0, 6, "Press A to delete the update folder");
-        OSScreenPutFontEx(SCREEN_DRC, 0, 6, "Press A to delete the update folder");
+        OSScreenPutFont(0, 4, "Update folder exists");
+        OSScreenPutFont(0, 6, "Press A to delete the update folder");
     } else {
-        OSScreenPutFontEx(SCREEN_TV, 0, 4, "Update folder is deleted");
-        OSScreenPutFontEx(SCREEN_DRC, 0, 4, "Update folder is deleted");
-
-        OSScreenPutFontEx(SCREEN_TV, 0, 6, "Press A to create the update folder");
-        OSScreenPutFontEx(SCREEN_DRC, 0, 6, "Press A to create the update folder");
+        OSScreenPutFont(0, 4, "Update folder is deleted");
+        OSScreenPutFont(0, 6, "Press A to create the update folder");
     }
 
-    OSScreenPutFontEx(SCREEN_TV, 0, 8, "Press HOME to exit");
-    OSScreenPutFontEx(SCREEN_DRC, 0, 8, "Press HOME to exit");
+    OSScreenPutFont(0, 8, "Press HOME to exit");
 
-    OSScreenFlipBuffersEx(SCREEN_TV);
-    OSScreenFlipBuffersEx(SCREEN_DRC);
+    OSScreenFlipBuffers();
 }
 
 int main(int argc, char **argv) {

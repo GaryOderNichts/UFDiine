@@ -1,6 +1,4 @@
-# UFDiine
-Wii U Update Folder Deleter
+# UFDiine - Wii U Update Folder Deleter
+![icon](meta/icon.png "Icon")
 
-Delete or create the update folder located at `/vol/storage_mlc01/sys/update`
-
-![alt text](https://raw.githubusercontent.com/GaryOderNichts/UFDiine/master/wiiu/apps/ufdiine/icon.png "Icon")
+This application can delete or create the update folder located at `/vol/storage_mlc01/sys/update`.
