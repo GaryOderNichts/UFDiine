@@ -1,71 +1,39 @@
-#include <whb/proc.h>
-#include <whb/log.h>
-#include <whb/log_console.h>
+#include <coreinit/filesystem_fsa.h>
 #include <coreinit/ios.h>
 #include <coreinit/mcp.h>
+#include <coreinit/screen.h>
 #include <coreinit/thread.h>
 #include <coreinit/time.h>
-#include <coreinit/screen.h>
+#include <mocha/mocha.h>
 #include <vpad/input.h>
-#include <iosuhax.h>
+#include <whb/log.h>
+#include <whb/log_cafe.h>
+#include <whb/log_console.h>
+#include <whb/proc.h>
 
 #define UPDATE_FOLDER_PATH "/vol/storage_mlc01/sys/update"
 
-int fsaFd = -1;
+int gClient = -1;
 
-//just to be able to call async
-void someFunc(IOSError err, void *arg){(void)arg;}
-
-static int mcp_hook_fd = -1;
-int MCPHookOpen()
-{
-	//take over mcp thread
-	mcp_hook_fd = MCP_Open();
-	if(mcp_hook_fd < 0)
-		return -1;
-	IOS_IoctlAsync(mcp_hook_fd, 0x62, (void*)0, 0, (void*)0, 0, someFunc, (void*)0);
-	//let wupserver start up
-	OSSleepTicks(OSMillisecondsToTicks(500));
-	if(IOSUHAX_Open("/dev/mcp") < 0)
-		return -1;
-	return 0;
-}
-
-void MCPHookClose()
-{
-	if(mcp_hook_fd < 0)
-		return;
-	//close down wupserver, return control to mcp
-	IOSUHAX_Close();
-	//wait for mcp to return
-	OSSleepTicks(OSMillisecondsToTicks(500));
-	MCP_Close(mcp_hook_fd);
-	mcp_hook_fd = -1;
-}
-
-BOOL updateFolderExists()
-{
-    int handle;
-    IOSUHAX_FSA_OpenDir(fsaFd, UPDATE_FOLDER_PATH, &handle);
-    if (handle < 0)
+BOOL updateFolderExists() {
+    FSADirectoryHandle handle = -1;
+    if (FSAOpenDir(gClient, UPDATE_FOLDER_PATH, &handle) != FS_ERROR_OK) {
         return FALSE;
+    }
 
-    IOSUHAX_FSA_CloseDir(fsaFd, handle);
+    FSACloseDir(gClient, handle);
     return TRUE;
 }
 
-void createUpdateFolder()
-{
-    IOSUHAX_FSA_MakeDir(fsaFd, UPDATE_FOLDER_PATH, 0777);
+void createUpdateFolder() {
+    FSAMakeDir(gClient, UPDATE_FOLDER_PATH, 0777);
 }
 
-void deleteUpdateFolder()
-{
-    IOSUHAX_FSA_Remove(fsaFd, UPDATE_FOLDER_PATH);
+void deleteUpdateFolder() {
+    FSARemove(gClient, UPDATE_FOLDER_PATH);
 }
 
-void drawMenu()
-{
+void drawMenu() {
     OSScreenClearBufferEx(SCREEN_TV, 0);
     OSScreenClearBufferEx(SCREEN_DRC, 0);
 
@@ -79,16 +47,13 @@ void drawMenu()
     OSScreenPutFontEx(SCREEN_DRC, 0, 2, "   Block updates by deleting the update folder   ");
     OSScreenPutFontEx(SCREEN_DRC, 0, 3, "*************************************************");
 
-    if (updateFolderExists())
-    {
+    if (updateFolderExists()) {
         OSScreenPutFontEx(SCREEN_TV, 0, 4, "Update folder exists");
         OSScreenPutFontEx(SCREEN_DRC, 0, 4, "Update folder exists");
 
         OSScreenPutFontEx(SCREEN_TV, 0, 6, "Press A to delete the update folder");
         OSScreenPutFontEx(SCREEN_DRC, 0, 6, "Press A to delete the update folder");
-    }
-    else
-    {
+    } else {
         OSScreenPutFontEx(SCREEN_TV, 0, 4, "Update folder is deleted");
         OSScreenPutFontEx(SCREEN_DRC, 0, 4, "Update folder is deleted");
 
@@ -103,57 +68,56 @@ void drawMenu()
     OSScreenFlipBuffersEx(SCREEN_DRC);
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
     WHBProcInit();
     WHBLogConsoleInit();
+    WHBLogCafeInit();
 
-	int res = IOSUHAX_Open(NULL);
-	if (res < 0)
-		res = MCPHookOpen();
-	if(res < 0)
-	{
-        WHBLogPrintf("Error opening IOSUHAX");
-        WHBLogPrintf("Make sure to run CFW");
+    if (Mocha_InitLibrary() != MOCHA_RESULT_SUCCESS) {
+        WHBLogPrintf("Mocha_InitLibrary failed");
         WHBLogConsoleDraw();
         OSSleepTicks(OSMillisecondsToTicks(3000));
         goto exit;
-	}
+    }
 
-	fsaFd = IOSUHAX_FSA_Open();
-	if(fsaFd < 0)
-	{
-        WHBLogPrintf("IOSUHAX_FSA_Open Error");
+
+    FSAInit();
+    gClient = FSAAddClient(NULL);
+    if (gClient == 0) {
+        WHBLogPrintf("Failed to add FSAClient");
         WHBLogConsoleDraw();
         OSSleepTicks(OSMillisecondsToTicks(3000));
         goto exit;
-	}
+    }
+    if (Mocha_UnlockFSClientEx(gClient) != MOCHA_RESULT_SUCCESS) {
+        FSADelClient(gClient);
+        WHBLogPrintf("Failed to add FSAClient");
+        WHBLogConsoleDraw();
+        OSSleepTicks(OSMillisecondsToTicks(3000));
+        goto exit;
+    }
 
     drawMenu();
 
     VPADStatus buffer;
-    while (WHBProcIsRunning())
-    {
+    while (WHBProcIsRunning()) {
         VPADRead(VPAD_CHAN_0, &buffer, 1, NULL);
-        
-        if (buffer.trigger & VPAD_BUTTON_A)
-        {
-            if (updateFolderExists())
-            {
+
+        if (buffer.trigger & VPAD_BUTTON_A) {
+            if (updateFolderExists()) {
                 deleteUpdateFolder();
-            }
-            else
-            {
+            } else {
                 createUpdateFolder();
             }
-            drawMenu();
         }
+        drawMenu();
+        OSSleepTicks(OSMillisecondsToTicks(100));
     }
 
-    if(mcp_hook_fd >= 0)
-		MCPHookClose();
-	else
-		IOSUHAX_Close();
+    FSADelClient(gClient);
+
+    Mocha_DeInitLibrary();
+
 
 exit:
     WHBLogConsoleFree();
