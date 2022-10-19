@@ -114,6 +114,8 @@ int main(int argc, char **argv) {
         OSSleepTicks(OSMillisecondsToTicks(100));
     }
 
+    FSAFlushVolume(gClient, "/vol/storage_mlc01");
+
     FSADelClient(gClient);
 
     Mocha_DeInitLibrary();
